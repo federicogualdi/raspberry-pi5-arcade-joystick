@@ -1,10 +1,15 @@
 #!/bin/bash
 
 # Configurations
-REPO_URL="https://github.com/federicogualdi/raspberry-pi5-arcade-joystick.git"
+REPO_NAME="raspberry-pi5-arcade-joystick"
+RAW_REPO_URL="https://raw.githubusercontent.com/federicogualdi/$REPO_NAME/main/arcade-joystick-installer"
+
 INSTALL_DIR="/recalbox/share/system/arcade_joystick"
+
 EXECUTABLE_NAME="joystick"
-LIB_NAME="liblgpio.so.1"
+LIB_PATH="usr/lib"
+LIB_NAME="liblgpio.so"
+LIB_NAME_1="liblgpio.so.1"
 LIB_DEST="/usr/lib"
 
 # Ensure we are running with root privileges
@@ -15,54 +20,52 @@ fi
 
 echo "Installing Arcade Joystick for Raspberry Pi 5 on Recalbox..."
 
-# Install git if not present (Recalbox has limited package support)
-if ! command -v git &> /dev/null; then
-    echo "Git not found, attempting to install..."
-    mount -o remount,rw /
-    mkdir -p /tmp/packages
-    wget https://github.com/git/git/releases/download/v2.39.3/git-2.39.3.tar.gz -O /tmp/packages/git.tar.gz
-    tar -xzf /tmp/packages/git.tar.gz -C /tmp/packages/
-    mv /tmp/packages/git /usr/bin/git
-    mount -o remount,ro /
-    echo "Git installed successfully."
-fi
+# Download the repository as files
+TEMP_DIR="/tmp/$REPO_NAME"
+mkdir -p "$TEMP_DIR"
 
-# Remove old installation if exists
-if [ -d "$INSTALL_DIR" ]; then
-    echo "Removing old installation..."
-    rm -rf "$INSTALL_DIR"
-fi
+echo "Downloading files from $RAW_REPO_URL..."
 
-# Clone the repository
-echo "Cloning repository from $REPO_URL..."
-git clone $REPO_URL $INSTALL_DIR
+# File to be downloaded
+FILES=(
+    "$EXECUTABLE_NAME"
+    "$LIB_PATH/$LIB_NAME"
+    "$LIB_PATH/$LIB_NAME_1"
+)
 
-if [ $? -ne 0 ]; then
-    echo "Failed to clone repository. Please check your internet connection or repository URL."
-    exit 1
-fi
+# Download each file
+for FILE in "${FILES[@]}"; do
+    # Create needed directories
+    DIR=$(dirname "$FILE")
+    mkdir -p "$TEMP_DIR/$DIR"
 
-echo "Repository cloned successfully."
+    # Download file
+    wget -q --show-progress "$RAW_REPO_URL/$FILE" -O "$TEMP_DIR/$FILE"
+done
 
-# Copy the compiled joystick binary to the system folder
-echo "Copying joystick binary to system folder..."
-cp "$INSTALL_DIR/$EXECUTABLE_NAME" /recalbox/share/system/
+# Mount filesystem as rw
+mount -o remount,rw /
+
+# Move the extracted folder to the install directory
+mv "$TEMP_DIR" "$INSTALL_DIR"
+echo "Downlaoded data moved to $INSTALL_DIR"
 
 # Ensure the binary is executable
-chmod +x /recalbox/share/system/$EXECUTABLE_NAME
+chmod +x $INSTALL_DIR/$EXECUTABLE_NAME
 
-# Copy the lgpio library to the correct location
-echo "Copying lgpio library to $LIB_DEST..."
-cp "$INSTALL_DIR/$LIB_NAME" "$LIB_DEST"
-
-# Make sure the library is discoverable
-ldconfig
+# Move the lgpio library to the correct location
+echo "Moving lgpio library to $LIB_DEST..."
+mv "$INSTALL_DIR/$LIB_PATH/$LIB_NAME" "$LIB_DEST"
+mv "$INSTALL_DIR/$LIB_PATH/$LIB_NAME_1" "$LIB_DEST"
 
 # Set up auto-start at boot
 echo "Configuring auto-start for joystick..."
 CUSTOM_SH="/recalbox/share/system/custom.sh"
 if ! grep -q "$EXECUTABLE_NAME" "$CUSTOM_SH"; then
-    echo "/recalbox/share/system/$EXECUTABLE_NAME &" >> "$CUSTOM_SH"
+    echo "cp $INSTALL_DIR/$EXECUTABLE_NAME /tmp/" >> "$CUSTOM_SH"
+    echo "chmod +x /tmp/joystick" >> "$CUSTOM_SH"
+    echo "/tmp/joystick &" >> "$CUSTOM_SH"
+    #echo "$INSTALL_DIR/$EXECUTABLE_NAME &"
     echo "Auto-start configured successfully."
 else
     echo "Auto-start already configured."

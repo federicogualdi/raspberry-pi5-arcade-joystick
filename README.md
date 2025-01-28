@@ -21,7 +21,8 @@ Specifically designed for **Recalbox**, but compatible with other retro gaming s
 To install automatically on **Recalbox**, run the following command:
 
 ```bash
-curl -sSL https://raw.githubusercontent.com/federicogualdi/raspberry-pi5-arcade-joystick/main/arcade-joystick-installer/install_arcade_joystick.sh | bash
+cd /tmp
+curl -H 'Cache-Control: no-cache' -sSL https://raw.githubusercontent.com/federicogualdi/raspberry-pi5-arcade-joystick/main/arcade-joystick-installer/install_arcade_joystick.sh | bash
 ```
 
 
