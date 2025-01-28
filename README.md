@@ -49,10 +49,18 @@ On **Raspberry Pi OS**, compile using:
 make
 ```
 
+On **Linux PC**, compile using:
+
+```bash
+sudo apt install gcc-aarch64-linux-gnu
+
+make
+```
+
 ### 3. Transfer the executable and dependencies to Recalbox
 
 ```bash
-scp joystick root@RECALBOX.local:/recalbox/share/system/arcade_joystick
+scp build/joystick root@RECALBOX.local:/recalbox/share/system/arcade_joystick
 scp /usr/lib/aarch64-linux-gnu/liblgpio.so root@RECALBOX.local:/usr/lib/
 scp /usr/lib/aarch64-linux-gnu/liblgpio.so.1 root@RECALBOX.local:/usr/lib/
 ```
