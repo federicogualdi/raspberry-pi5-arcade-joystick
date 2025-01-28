@@ -1,0 +1,23 @@
+#!/bin/bash
+
+# Ensure the script stops on errors
+set -e
+
+# Build the project
+echo "Building the project..."
+make
+
+# Define the deploy directory and ensure it exists
+DEPLOY_DIR="arcade-joystick-installer"
+mkdir -p $DEPLOY_DIR
+
+# Copy the built executable to the deploy folder
+cp build/joystick $DEPLOY_DIR/
+
+# Log the deployment
+echo "Deployed build/joystick to $DEPLOY_DIR/joystick"
+
+# Ensure the latest build is staged (optional)
+git add $DEPLOY_DIR/joystick
+
+echo "Pre-commit hook completed successfully."

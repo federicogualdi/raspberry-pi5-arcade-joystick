@@ -27,6 +27,11 @@
 #define BTN_DEBOUNCE_USEC (30 * 1000)
 #define INTERRUPT_WAIT_USEC (100 * 1000)
 
+// Injected during the build process
+#ifndef BUILD_TIMESTAMP
+#define BUILD_TIMESTAMP "unknown"
+#endif
+
 // Button mapping to Linux key codes
 struct button_map {
     int gpio_pin;
@@ -166,6 +171,8 @@ void handle_sigint(int sig) {
 int main(int argc, char *argv[]) {
     set_log_level_from_args(argc, argv);
     signal(SIGINT, handle_sigint);
+
+    log_message(LOG_LEVEL_INFO, "GPIO Arcade Joystick - Version: %s", BUILD_TIMESTAMP);
     
     int fd = setup_uinput_device();
     if (fd < 0) {

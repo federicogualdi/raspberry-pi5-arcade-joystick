@@ -9,6 +9,11 @@ SRC_FILES = $(wildcard $(SRC_DIR)/*.c)
 BUILD_DIR = build
 TARGET = $(BUILD_DIR)/joystick
 
+# Get the current timestamp in UTC
+BUILD_TIMESTAMP := $(shell date -u +"%Y-%m-%d_%H:%M:%S")
+# Add the UTC timestamp as a macro for the compiler
+CFLAGS += -DBUILD_TIMESTAMP=\"$(BUILD_TIMESTAMP)\"
+
 # Select compiler based on architecture
 ifeq ($(UNAME_M), aarch64)
     CC = gcc  # Use the native GCC on aarch64
@@ -29,4 +34,8 @@ $(TARGET): $(SRC_FILES)
 clean:
 	rm -rf $(BUILD_DIR)
 
-.PHONY: all clean
+install-hooks:
+	cp hooks/pre-commit .git/hooks/
+	chmod +x .git/hooks/pre-commit
+
+.PHONY: all clean install-hooks
