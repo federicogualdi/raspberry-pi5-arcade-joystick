@@ -5,6 +5,7 @@
 #include <string.h>
 #include <lgpio.h>
 #include <signal.h>
+#include "include/log.h"
 
 // GPIO pin definitions for buttons
 #define GPIO_UP 17
@@ -47,47 +48,13 @@ struct button_map buttons[] = {
 
 #define NUM_BUTTONS (sizeof(buttons) / sizeof(buttons[0]))
 
-// Logging levels
-#define LOG_LEVEL_DEBUG 0
-#define LOG_LEVEL_INFO  1
-#define LOG_LEVEL_ERROR 2
-
-// Current log level (adjust as needed)
-int current_log_level = LOG_LEVEL_INFO;
-
-// Logging macro
-#define LOG(level, format, ...) \
-    do { \
-        if (level >= current_log_level) { \
-            fprintf(stderr, "[%s] [%s] " format "\n", get_time_str(), log_level_to_str(level), ##__VA_ARGS__); \
-        } \
-    } while (0)
-
-// Convert log level to string
-const char* log_level_to_str(int level) {
-    switch (level) {
-        case LOG_LEVEL_DEBUG: return "DEBUG";
-        case LOG_LEVEL_INFO:  return "INFO";
-        case LOG_LEVEL_ERROR: return "ERROR";
-        default:              return "UNKNOWN";
-    }
-}
-
-// Get current time string
-const char* get_time_str() {
-    static char buffer[20];
-    time_t now = time(NULL);
-    strftime(buffer, sizeof(buffer), "%Y-%m-%d %H:%M:%S", localtime(&now));
-    return buffer;
-}
-
 volatile sig_atomic_t running = 1;
 
 // Function to configure the virtual joystick
 int setup_uinput_device() {
     int fd = open("/dev/uinput", O_WRONLY | O_NONBLOCK);
     if (fd < 0) {
-        LOG(LOG_LEVEL_ERROR, "Error opening /dev/uinput");
+        log_message(LOG_LEVEL_ERROR, "Error opening /dev/uinput");
         return -1;
     }
 
@@ -117,7 +84,7 @@ int setup_uinput_device() {
     ioctl(fd, UI_DEV_SETUP, &usetup);
     ioctl(fd, UI_DEV_CREATE);
 
-    LOG(LOG_LEVEL_INFO, "GPIO Arcade Joystick successfully created!");
+    log_message(LOG_LEVEL_INFO, "GPIO Arcade Joystick successfully created!");
     return fd;
 }
 
@@ -139,7 +106,7 @@ void send_key_event(int fd, int key_code, int pressed) {
 
 // Callback function for GPIO state change
 void gpio_callback(int num_alerts, lgGpioAlert_p alerts, void *userdata) {
-    LOG(LOG_LEVEL_DEBUG, "GPIO callback triggered, num_alerts: %d", num_alerts);
+    log_message(LOG_LEVEL_DEBUG, "GPIO callback triggered, num_alerts: %d", num_alerts);
 
     int fd = *(int *)userdata;
 
@@ -147,10 +114,10 @@ void gpio_callback(int num_alerts, lgGpioAlert_p alerts, void *userdata) {
         for (int j = 0; j < NUM_BUTTONS; j++) {
             if (buttons[j].gpio_pin == alerts[i].report.gpio) {
                 if (alerts[i].report.level == 0) {  // Button pressed
-                    LOG(LOG_LEVEL_DEBUG, "Button %d pressed", alerts[i].report.gpio);
+                    log_message(LOG_LEVEL_DEBUG, "Button %d pressed", alerts[i].report.gpio);
                     send_key_event(fd, buttons[j].key_code, 1);
                 } else {  // Button released
-                    LOG(LOG_LEVEL_DEBUG, "Button %d released", alerts[i].report.gpio);
+                    log_message(LOG_LEVEL_DEBUG, "Button %d released", alerts[i].report.gpio);
                     send_key_event(fd, buttons[j].key_code, 0);
                 }
                 break;
@@ -161,10 +128,10 @@ void gpio_callback(int num_alerts, lgGpioAlert_p alerts, void *userdata) {
 
 // Function to monitor GPIOs using interrupts
 void monitor_gpio(int fd) {
-    LOG(LOG_LEVEL_INFO, "Starting GPIO monitoring...");
+    log_message(LOG_LEVEL_INFO, "Starting GPIO monitoring...");
     int chip = lgGpiochipOpen(0);
     if (chip < 0) {
-        LOG(LOG_LEVEL_ERROR, "Error opening GPIO chip");
+        log_message(LOG_LEVEL_ERROR, "Error opening GPIO chip");
         return;
     }    
 
@@ -175,12 +142,12 @@ void monitor_gpio(int fd) {
             lgGpioSetAlertsFunc(chip, buttons[i].gpio_pin, gpio_callback, &fd) < 0 ||
             lgGpioSetDebounce(chip, buttons[i].gpio_pin, BTN_DEBOUNCE_USEC) < 0
         ) {
-            LOG(LOG_LEVEL_ERROR, "Error while configuring GPIO pin");
+            log_message(LOG_LEVEL_ERROR, "Error while configuring GPIO pin");
             lgGpiochipClose(chip);
             return;
         }
     }
-    LOG(LOG_LEVEL_INFO, "GPIO monitoring successfully set-up!");
+    log_message(LOG_LEVEL_INFO, "GPIO monitoring successfully set-up!");
 
     // Wait indefinitely until interrupted
     while (running) {
@@ -193,24 +160,7 @@ void monitor_gpio(int fd) {
 // Function to handle SIGINT (Ctrl+C) signal
 void handle_sigint(int sig) {
     running = 0;
-    LOG(LOG_LEVEL_INFO, "Shutting down due to SIGINT...");
-}
-
-// Function to set log level from command line argument
-void set_log_level_from_args(int argc, char *argv[]) {
-    for (int i = 1; i < argc; i++) {
-        if (strcmp(argv[i], "--log-level") == 0 && i + 1 < argc) {
-            if (strcmp(argv[i + 1], "DEBUG") == 0) {
-                current_log_level = LOG_LEVEL_DEBUG;
-            } else if (strcmp(argv[i + 1], "INFO") == 0) {
-                current_log_level = LOG_LEVEL_INFO;
-            } else if (strcmp(argv[i + 1], "ERROR") == 0) {
-                current_log_level = LOG_LEVEL_ERROR;
-            } else {
-                fprintf(stderr, "Unknown log level: %s\n", argv[i + 1]);
-            }
-        }
-    }
+    log_message(LOG_LEVEL_INFO, "Shutting down due to SIGINT...");
 }
 
 int main(int argc, char *argv[]) {

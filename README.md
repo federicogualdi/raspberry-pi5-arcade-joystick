@@ -46,7 +46,7 @@ sudo apt install liblgpio-dev
 On **Raspberry Pi OS**, compile using:
 
 ```bash
-make build
+make
 ```
 
 ### 3. Transfer the executable and dependencies to Recalbox
