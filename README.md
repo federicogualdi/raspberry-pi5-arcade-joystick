@@ -46,13 +46,13 @@ sudo apt install liblgpio-dev
 On **Raspberry Pi OS**, compile using:
 
 ```bash
-gcc joystick.c -o joystick -llgpio
+make build
 ```
 
 ### 3. Transfer the executable and dependencies to Recalbox
 
 ```bash
-scp joystick root@RECALBOX.local:/recalbox/share/system/
+scp joystick root@RECALBOX.local:/recalbox/share/system/arcade_joystick
 scp /usr/lib/aarch64-linux-gnu/liblgpio.so root@RECALBOX.local:/usr/lib/
 scp /usr/lib/aarch64-linux-gnu/liblgpio.so.1 root@RECALBOX.local:/usr/lib/
 ```
@@ -63,19 +63,21 @@ SSH into Recalbox and start the joystick emulator manually:
 
 ```bash
 ssh root@RECALBOX.local
-/recalbox/share/system/joystick
+/recalbox/share/system/arcade_joystick/joystick
 ```
 
 Run the joystick emulator with DEBUG log:
 
 ```bash
-/recalbox/share/system/joystick --log-level DEBUG
+/recalbox/share/system/arcade_joystick/joystick --log-level DEBUG
 ```
 
 To run it at startup, add the following line to `custom.sh`:
-
+> Until I find a better solution, this way works
 ```bash
-/recalbox/share/system/joystick &
+cp /recalbox/share/system/arcade_joystick/joystick /tmp
+chmod +x /tmp/joystick
+/tmp/joystick &
 ```
 
 ## 🕹️ Wiring Guide
