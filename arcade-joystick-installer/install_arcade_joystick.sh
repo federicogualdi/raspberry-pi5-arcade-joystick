@@ -50,22 +50,18 @@ mount -o remount,rw /
 mv "$TEMP_DIR" "$INSTALL_DIR"
 echo "Downlaoded data moved to $INSTALL_DIR"
 
-# Ensure the binary is executable
-chmod +x $INSTALL_DIR/$EXECUTABLE_NAME
-
-# Move the lgpio library to the correct location
-echo "Moving lgpio library to $LIB_DEST..."
-mv "$INSTALL_DIR/$LIB_PATH/$LIB_NAME" "$LIB_DEST"
-mv "$INSTALL_DIR/$LIB_PATH/$LIB_NAME_1" "$LIB_DEST"
-
 # Set up auto-start at boot
 echo "Configuring auto-start for joystick..."
 CUSTOM_SH="/recalbox/share/system/custom.sh"
 if ! grep -q "$EXECUTABLE_NAME" "$CUSTOM_SH"; then
+    echo "# GPIO Arcade Joystick" >> "$CUSTOM_SH"
+    echo "## copy required libraries" >> "$CUSTOM_SH"
+    echo "cp $INSTALL_DIR/$LIB_PATH/$LIB_NAME $LIB_DEST" >> "$CUSTOM_SH"
+    echo "cp $INSTALL_DIR/$LIB_PATH/$LIB_NAME_1 $LIB_DEST" >> "$CUSTOM_SH"
+    echo "## set executable permissions and run joystick" >> "$CUSTOM_SH"
     echo "cp $INSTALL_DIR/$EXECUTABLE_NAME /tmp/" >> "$CUSTOM_SH"
     echo "chmod +x /tmp/joystick" >> "$CUSTOM_SH"
     echo "/tmp/joystick &" >> "$CUSTOM_SH"
-    #echo "$INSTALL_DIR/$EXECUTABLE_NAME &"
     echo "Auto-start configured successfully."
 else
     echo "Auto-start already configured."
